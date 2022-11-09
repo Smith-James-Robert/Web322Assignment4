@@ -10,32 +10,39 @@ var qs = require('qs');
 const exphbs = require('express-handlebars');
 const mongoose = require('mongoose');
 mongoose.connect("mongodb+srv://JamesSmith:8bhFGM5LcSPvXrb@senecaweb322.stg0tk4.mongodb.net/testDatabase?retryWrites=true&w=majority")
-var Schema= mongoose.Schema;
-var companySchema = new Schema({
-    "companyName":  String,
-    "address": String,
-    "phone": String,
-    "employeeCount": {
-      "type": Number,
-      "default": 0
+var Schema = mongoose.Schema;
+var accountSchema = new Schema({
+
+    "user":{
+        "type":String,
+        "unique":true
     },
-    "sandwiches": Number,
-    "country": String  
-  });
-  var Company = mongoose.model("web322_companies", companySchema);
-  var kwikEMart = new Company({
-    companyName: "The Quick-Y-Mart",
-    address: "Springfield",
-    phone: "212-842-4923",
-    employeeCount: 3,
-    country: "U.S.A",
-    sandwiches: 500
-  });
-  kwikEMart.save().then(()=>{
-    console.log("The Kwik-E-Mart company was saved to the web322_companies collection");
-}).catch(err=>{
-    console.log("There was an error saving the Kwik-E-Mart company");
+    "phone":Number,
+    "pass":String,//TO DO ENCRYPT PASSWORD
+    "fName":String,
+    "lName":String,
+    "emailAddress":{
+        "type":String,
+        "unique":true
+    },
+    "company":{
+        "type": String,
+        "default": -1
+    },
+    "adrs1":{
+        "type":String,
+        "default": -1
+    },
+    "adrs2":{
+        "type":String,
+        "default": -1
+    },
+    "admin":{
+        "type":Boolean,
+        "default":false
+    }
 });
+var Account = mongoose.model("as4Account",accountSchema);
 app.engine('.hbs', exphbs.engine({ extname: '.hbs' }));
 app.set('view engine', '.hbs');
 
@@ -77,8 +84,18 @@ app.post("/login",function(req,res){
 
     const noSpecial=/[!-\/:-@[-`{-~]/;
  var username=req.body.username;
+ var userName=username;
  var password=req.body.password;
+ var passWord=password;
  var validPassword=false;
+Account.find({
+username:userName,
+password:passWord
+}).exec().then((accounts))
+{
+    accounts=accounts.map(value=>value.toObject());
+    console.log(accounts);
+}
  if (password!='' && noSpecial.test(password) && password.length>=8)
  {
     validPassword=true;
@@ -129,7 +146,10 @@ validUser=true;
     var emailValid=true;
     var phoneValid=true;
     var firstValid=true;
-    var lastValid=false;
+    var lastValid=true;
+
+    var usernameError= false;
+    var emailError=false;
 
     const noSpecial=/[!-\/:-@[-`{-~]/;
     const phoneNumber=/[0-9]{10}/
@@ -190,11 +210,64 @@ validUser=true;
         FirstName:firstName,
         validFirst:!firstValid,
         LastName:lastName,
-        validLast:!lastValid
+        validLast:!lastValid,
+        usernameError:false
     }
     if (valid)
     {
-    res.redirect('/dashboard')
+        var account = new Account ({
+            user:username,
+            phone:phone,
+            pass:password,
+            fName:firstName,
+            lName:lastName,
+            emailAddress:email,
+            company:companyName,
+            adrs1:address1,
+            adrs2:address2
+        })
+        Account.find({user: someData.user}, "user" ).exec().then((accounts)=>
+        {
+            accounts=accounts.map(value => value.toObject());
+            console.log("ACCOUNT FOUND=");
+            console.log(accounts);
+            console.log(accounts.user);
+            if (accounts.user!=undefined)
+            {
+                console.log("AccountValue");
+                usernameError=true;
+            }
+        }
+        ).catch(
+
+        )
+        Account.find({emailAddress: someData.emailAddress}, "emailAddress").exec().then((accounts)=>
+        {
+            accounts=accounts.map(value=>value.toObject());
+            console.log("Email FOUND=");
+            console.log(accounts.emailAddress);
+            if (accounts.emailAddress!=undefined)
+            {
+                console.log("EmailValue");
+                emailError=true;
+            }
+        }).catch()
+        account.save().then(()=>{
+            console.log(account);
+        }).catch(err=>{
+            //JUST DO IT RIGHT EVEN IF ITS REALLY ANNOYING TO DO RIGHT
+            valid=false;
+            console.log("valid="+valid);
+            someData.validUser=usernameError;
+            someData.usernameError=emailError;
+            console.log(someData);
+            res.render('registration',{
+                data:someData,
+                layout:false
+                })
+           // res.redirect('/blog');
+        });
+    //Send data to database.
     }
     else
     {
