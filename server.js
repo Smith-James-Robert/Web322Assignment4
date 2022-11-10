@@ -9,8 +9,18 @@ const e = require("express");
 var qs = require('qs');
 const exphbs = require('express-handlebars');
 const mongoose = require('mongoose');
+var hash=require('object-hash'); // This is apparently not a very good hash but I don't know how to implment any others and couldn't find that information in the course notes.
+
+console.log(hash('peter'));
+console.log(hash('Peter'));
+console.log(hash('peter'));
+
+
 mongoose.connect("mongodb+srv://JamesSmith:8bhFGM5LcSPvXrb@senecaweb322.stg0tk4.mongodb.net/testDatabase?retryWrites=true&w=majority")
 var Schema = mongoose.Schema;
+
+
+
 var accountSchema = new Schema({
 
     "user":{
@@ -45,6 +55,19 @@ var accountSchema = new Schema({
 var Account = mongoose.model("as4Account",accountSchema);
 app.engine('.hbs', exphbs.engine({ extname: '.hbs' }));
 app.set('view engine', '.hbs');
+Account.find({ user: "johndoe"})
+//.sort({}) //optional "sort" - https://docs.mongodb.com/manual/reference/operator/aggregation/sort/ 
+.exec()
+.then((companies) => {
+  // companies will be an array of objects.
+  // Each object will represent a document that matched the query
+
+  // Convert the mongoose documents into plain JavaScript objects
+  console.log(companies);
+  var canary = companies.map(value => value.toObject());
+    console.log(canary[0].user);
+    console.log(canary.user);
+});
 
 
 
@@ -90,7 +113,7 @@ app.post("/login",function(req,res){
  var validPassword=false;
 Account.find({
 username:userName,
-password:passWord
+password:hash(passWord)
 }).exec().then((accounts))
 {
     accounts=accounts.map(value=>value.toObject());
@@ -211,14 +234,15 @@ validUser=true;
         validFirst:!firstValid,
         LastName:lastName,
         validLast:!lastValid,
-        usernameError:false
+        usernameError:false,
+        emailError:false
     }
     if (valid)
     {
         var account = new Account ({
             user:username,
             phone:phone,
-            pass:password,
+            pass:hash(password),
             fName:firstName,
             lName:lastName,
             emailAddress:email,
@@ -229,13 +253,15 @@ validUser=true;
         Account.find({user: someData.user}, "user" ).exec().then((accounts)=>
         {
             accounts=accounts.map(value => value.toObject());
-            console.log("ACCOUNT FOUND=");
-            console.log(accounts);
-            console.log(accounts.user);
-            if (accounts.user!=undefined)
+            console.log("ACCOUNT FOUND="+accounts[0].user);
+            //console.log(accounts);
+            console.log(accounts[0].user);
+            if (accounts[0].user!=undefined)
             {
-                console.log("AccountValue");
+                console.log("AccountValue="+accounts[0].user);
                 usernameError=true;
+                someData.usernameError=true;
+                console.log(someData.usernameError);
             }
         }
         ).catch(
@@ -244,9 +270,9 @@ validUser=true;
         Account.find({emailAddress: someData.emailAddress}, "emailAddress").exec().then((accounts)=>
         {
             accounts=accounts.map(value=>value.toObject());
-            console.log("Email FOUND=");
-            console.log(accounts.emailAddress);
-            if (accounts.emailAddress!=undefined)
+            console.log("Email FOUND="+accounts[0].emailAddress);
+            //console.log(accounts.emailAddress);
+            if (accounts[0].emailAddress!=undefined)
             {
                 console.log("EmailValue");
                 emailError=true;
@@ -258,9 +284,10 @@ validUser=true;
             //JUST DO IT RIGHT EVEN IF ITS REALLY ANNOYING TO DO RIGHT
             valid=false;
             console.log("valid="+valid);
-            someData.validUser=usernameError;
-            someData.usernameError=emailError;
+            someData.usernameError=usernameError;
+            someData.emailError=emailError;
             console.log(someData);
+            console.log(usernameError+"= UsernameError");
             res.render('registration',{
                 data:someData,
                 layout:false

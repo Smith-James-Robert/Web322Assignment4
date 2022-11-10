@@ -53,17 +53,17 @@
             {{/if}}
           </div>
         <div class="mb-3">
+          {{#if data.emailError}}       
+             <input type="email" class="form-control is-invalid" name="email" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Email Address" value={{data.emailAddress}}>
+          <div class="invalid-feedback">That email address already exists!</div>
+          {{else}}
             {{#if data.validEmail}}
           <input type="email" class="form-control is-invalid" name="email" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Email Address" value={{data.emailAddress}}>
           <div class="invalid-feedback">Email address must have an @</div>
-            {{#if data.usernameError}}
-            {{#else}}
-          <input type="email" class="form-control is-invalid" name="email" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Email Address" value={{data.emailAddress}}>
-          <div class="invalid-feedback">That email address already exists!</div>
 
             {{else}}
           <input type="email" class="form-control" name="email" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Email Address" value={{data.emailAddress}}>
-
+            {{/if}}
             {{/if}}
         </div>
         <div class="mb-3">
@@ -89,20 +89,20 @@
           </div>
           <h4>Login Details</h4>
           <div class="mb-3">
-            {{#if data.validUser}}
-              {{#if data.usernameError}}
-              <label for="username" class="form-label">Username</label>
-              <input type="text" class="form-control is-invalid" name="username" id="username" placeholder="Username" value={{data.user}}>
-              <div class="invalid-feedback">Username already exists</div>
-              {{else}}
+            {{#if data.usernameError}}
+            <label for="username" class="form-label">Username</label>
+            <input type="text" class="form-control is-invalid" name="username" id="username" placeholder="Username" value={{data.user}}>
+            <div class="invalid-feedback">Username already exists</div>
+            {{else}}
+                {{#if data.validUser}}
               <label for="username" class="form-label">Username</label>
               <input type="text" class="form-control is-invalid" name="username" id="username" placeholder="Username" value={{data.user}}>
               <div class="invalid-feedback">Username must not contain special characters</div>
-              {{/if}}
-            {{else}}
-          <label for="username" class="form-label">Username</label>
+               {{else}}
+           <label for="username" class="form-label">Username</label>
             <input type="text" class="form-control" name="username" id="username" placeholder="Username" value="{{data.user}}">
           {{/if}}
+                      {{/if}}
         </div>
         <div class="mb-3">
             {{#if data.validPass}}
