@@ -141,7 +141,9 @@ app.post("/login",function(req,res){
  var username=req.body.username;
  var userName=username;
  var password=req.body.password;
+ console.log(password);
  var passWord=password;
+ console.log(passWord);
  var someData;
 // console.log(userName);
 Account.findOne({
@@ -192,8 +194,10 @@ res.render('dashboard',{
  else{
     someData={
         username:userName,
-        password:passWord
+        password:passWord,
+        invalid:true
     }
+    console.log(someData);
    // res.redirect('/login');
    res.render('login',{
         data:someData,

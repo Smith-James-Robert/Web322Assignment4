@@ -48,6 +48,9 @@
           <label for="exampleInputPassword1" class="form-label">Password</label>
           <input type="password" id="password" name="password"    id="exampleInputPassword1" (value ={{data.password}}) class="form-control">
           {{/if}}
+          {{#if data.invalid}}
+          <h5 style="color:red">Invalid username or password!</p>
+          {{/if}}
         </div>
         <div class="mb-3 form-check">
           <input type="checkbox" class="form-check-input" id="exampleCheck1">
