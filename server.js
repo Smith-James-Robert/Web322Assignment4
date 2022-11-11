@@ -11,7 +11,7 @@ const exphbs = require('express-handlebars');
 const mongoose = require('mongoose');
 var hash=require('object-hash'); // This is apparently not a very good hash but I don't know how to implment any others and couldn't find that information in the course notes.
 
-console.log(hash('peter'));
+console.log(hash('admin'));
 console.log(hash('Peter'));
 console.log(hash('peter'));
 
@@ -28,7 +28,7 @@ var accountSchema = new Schema({
         "unique":true
     },
     "phone":Number,
-    "pass":String,//TO DO ENCRYPT PASSWORD
+    "pass":String,
     "fName":String,
     "lName":String,
     "emailAddress":{
@@ -52,32 +52,34 @@ var accountSchema = new Schema({
         "default":false
     }
 });
+var blogSchema = new Schema ({
+    "title":String,
+    "article":String,
+    "id":{
+        "type":Number,
+        "unique":true
+    }
+})
+var articleSchema = new Schema ({
+    "title":String,
+    "article":String,
+    "id":{
+        "type":Number,
+        "unique":true
+    }
+})
+var Article=mongoose.model("as4Article",articleSchema);
+var Blog=mongoose.model("as4Blog",blogSchema);
 var Account = mongoose.model("as4Account",accountSchema);
 app.engine('.hbs', exphbs.engine({ extname: '.hbs' }));
 app.set('view engine', '.hbs');
-Account.find({ user: "johndoe"})
-//.sort({}) //optional "sort" - https://docs.mongodb.com/manual/reference/operator/aggregation/sort/ 
-.exec()
-.then((companies) => {
-  // companies will be an array of objects.
-  // Each object will represent a document that matched the query
-
-  // Convert the mongoose documents into plain JavaScript objects
-  console.log(companies);
-  var canary = companies.map(value => value.toObject());
-    console.log(canary[0].user);
-    console.log(canary.user);
-});
-
-
-
 app.use(bodyParser.urlencoded({ extended: false }))
 
 // parse application/json
 app.use(bodyParser.json())
 // setup a 'route' to listen on the default url path
 app.get("/", (req, res) => {
-    res.redirect('/blog');
+res.redirect('/blog');
     //res.send("Hello World!");
 });
 app.get("/registration", function(req,res){
@@ -86,7 +88,32 @@ app.get("/registration", function(req,res){
     });
 })
 app.get("/blog", function(req,res){
-    res.sendFile(path.join(__dirname,"blog.html"));
+    var someData;
+    var mainArticle=0;
+    Blog.find({}).exec().then((articles)=>
+    {
+        articles=articles.map(value => value.toObject());
+        someData=articles;
+        mainArticle=someData.shift();
+        //In actual production you'd probably want to select the headline seperately and then find the ids for the ones that you want for other articles.
+        for (var i=0;i<someData.length;i++)
+        {
+            if (someData[i].id%2)
+            {
+                someData[i].lineBreak=true;
+            }
+            else
+            {
+                someData[i].lineBreak=false;
+            }
+        }
+        res.render('blog',{
+            data:someData,
+            headline:mainArticle,
+            layout:false
+        });
+    })
+
 })     
 /* 
 app.get("/article/:id", function(req,res){
@@ -100,7 +127,12 @@ app.get("/login", function(req,res){
    });
 })
 app.get("/dashboard",function (req,res){
-    res.sendFile(path.join(__dirname,"dashboard.html"));
+   // res.sendFile(path.join(__dirname,"dashboard.html"));
+   //res.render('dashboard',{
+  //  layout:false
+//});
+console.log("apple");
+res.redirect('/blog');
 })
 app.post("/login",function(req,res){
  
@@ -110,49 +142,71 @@ app.post("/login",function(req,res){
  var userName=username;
  var password=req.body.password;
  var passWord=password;
- var validPassword=false;
-Account.find({
-username:userName,
-password:hash(passWord)
-}).exec().then((accounts))
+ var someData;
+// console.log(userName);
+Account.findOne({
+user:userName,
+pass:hash(passWord)
+}).exec().then((accounts)=>
 {
-    accounts=accounts.map(value=>value.toObject());
-    console.log(accounts);
+    //someData=accounts.map(value=>value.toObject());
+//console.log(accounts);
+   // console.log(accounts.user);
+   // console.log(userName);
+   // console.log(accounts.pass);
+   // console.log(passWord);
+   if (accounts!=null)
+{
+
+someData={
+    user:accounts.user,
+    emailAddress:accounts.emailAddress,
+    FirstName:accounts.fName,
+    LastName:accounts.lName,
 }
- if (password!='' && noSpecial.test(password) && password.length>=8)
- {
-    validPassword=true;
- }
- var validUser=false;
- if (username!='' && !noSpecial.test(username))
- {
-validUser=true;
- }
- var someData={
-    username:req.body.username,
-    password:req.body.password,
-    passValid:!validPassword,
-    userValid:!validUser
- }
- console.log(req.body.username);
- console.log(username);
- //&& noSpecial.test(username)
- console.log(validPassword)
- if (username!='' && validPassword && !noSpecial.test(username))
- {
- console.log("Your password is: " + password);
- console.log("Your username is: " + username);
- res.redirect('/dashboard');
- }
+if(accounts.admin)
+{
+    res.render('admindashboard',{
+        layout:false,
+        data:{
+            user:accounts.user,
+            emailAddress:accounts.emailAddress,
+            FirstName:accounts.fName,
+            LastName:accounts.lName,
+        }
+     })
+}
+else
+{
+res.render('dashboard',{
+    layout:false,
+    data:{
+        user:accounts.user,
+        emailAddress:accounts.emailAddress,
+        FirstName:accounts.fName,
+        LastName:accounts.lName,
+    }
+ })
+}
+}
  else{
+    someData={
+        username:userName,
+        password:passWord
+    }
    // res.redirect('/login');
-   console.log("apple");
-    res.render('login',{
+   res.render('login',{
         data:someData,
         layout:false
     })
  }
- })
+}
+)
+}
+)
+
+
+
  app.post("/registration",function(req,res){    
     var username=req.body.username;
     var password=req.body.password;
@@ -208,7 +262,7 @@ validUser=true;
         phoneValid=false;
     }
 
-
+/*
     console.log("Valid =" + valid);
     console.log(email);
     console.log(firstName);
@@ -221,6 +275,7 @@ validUser=true;
     console.log(password);
     console.log(userValid);
     console.log(passValid);
+    */
     var someData={
         phoneNum:phone,
         validPhone:!phoneValid,
@@ -253,6 +308,8 @@ validUser=true;
         Account.find({user: someData.user}, "user" ).exec().then((accounts)=>
         {
             accounts=accounts.map(value => value.toObject());
+            if (accounts[0]!=undefined)
+            {
             console.log("ACCOUNT FOUND="+accounts[0].user);
             //console.log(accounts);
             console.log(accounts[0].user);
@@ -264,12 +321,15 @@ validUser=true;
                 console.log(someData.usernameError);
             }
         }
+        }
         ).catch(
 
         )
         Account.find({emailAddress: someData.emailAddress}, "emailAddress").exec().then((accounts)=>
         {
             accounts=accounts.map(value=>value.toObject());
+            if (accounts[0]!=undefined)
+            {
             console.log("Email FOUND="+accounts[0].emailAddress);
             //console.log(accounts.emailAddress);
             if (accounts[0].emailAddress!=undefined)
@@ -277,6 +337,7 @@ validUser=true;
                 console.log("EmailValue");
                 emailError=true;
             }
+        }
         }).catch()
         account.save().then(()=>{
             console.log(account);
@@ -303,6 +364,12 @@ validUser=true;
             layout:false
         })
     }
+   // console.log(someData);
+   console.log("Moving to Dashboard");
+    res.render('dashboard',{
+    data:someData,
+    layout:false})
+   // res.redirect('/dashboard')
  })
 app.get("/iconsmall.png",function(req,res){
     res.sendFile(path.join(__dirname,"icon.png"));
@@ -310,6 +377,24 @@ app.get("/iconsmall.png",function(req,res){
 app.get("/twitter",function(req,res){
     res.sendFile(path.join(__dirname,"Tweeter.png"));
 })
+app.get("/article/:id",function(req,res){
+    console.log(req.params);
+    console.log(req.params.id);
+    var someData
+    Article.find({id:req.params.id}).exec().then((article)=> {
+        article = article.map(value => value.toObject());
+        //console.log(article);
+        someData=article[0];
+       // console.log(someData);
+        res.render('article',{
+            data:someData,
+            layout:false
+        });
+    })
+
+    //res.sendFile(path.join(__dirname,("article"+req.params.id+".html")));
+})
+/*
 app.get("/article/1",function(req,res){
     res.sendFile(path.join(__dirname,"article1.html"));
 })
